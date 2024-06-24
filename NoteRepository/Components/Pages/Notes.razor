@@ -1,0 +1,31 @@
+﻿@page "/"
+@inject MongoDatabase.MongoDbService MongoDbService
+@using MongoDB.Bson
+
+<h3>Notes</h3>
+
+@if (notes == null) {
+    <p>Loading...</p>
+} 
+else if (notes.Count == 0)
+{
+    <p>No notes found.</p>
+} 
+else
+{
+    @foreach (var note in notes)
+    {
+        <li>
+            <a href="/notes/@note.Name">@note.Name</a>
+        </li>
+    }
+}
+
+@code {
+    private List<Components.Models.NoteTitleDto> ?notes;
+
+    protected override async Task OnInitializedAsync()
+    {
+        notes = await MongoDbService.GetNoteTitlesAsync();
+    }
+}

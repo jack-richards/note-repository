@@ -1,0 +1,56 @@
+﻿@page "/notes/{name}"
+@using MongoDB.Bson
+@inject MongoDatabase.MongoDbService MongoDbService
+
+<div class="container-md">
+<h2><u>@name</u></h2>
+@if (content != null && content.Length > 0) {
+    @foreach (var entry in content)
+    {
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">@entry</p>
+                <a href="#" class="btn btn-primary">Edit</a>
+                <a href="#" class="btn btn-primary">Delete</a>
+            </div>
+        </div>
+    }
+} 
+else
+{
+    <p>No Notes</p>
+}
+
+<h2>Links</h2>
+@if (links != null && links.Length > 0) {
+    @foreach (var link in links)
+    {
+        <a href="@link">@link</a>
+    }
+}
+else
+{
+    <p>No Links</p>
+}
+</div>
+
+@code {
+    [Parameter]
+    public string name { get; set; }
+
+    private string[] content = [];
+    private string[] links = [];
+
+    // This lifecycle hook ensures that whenever the parameter (note name in the url) changes
+    // the component executes the data fetching logic again.
+    protected override async Task OnParametersSetAsync()
+    {
+        var note = await MongoDbService.GetNoteByNameAsync(name);
+        if (note != null && note.Content != null)
+        {
+            name = note.Name;
+            content = note.Content;
+            links = note.listLinks;
+        }
+    }
+}
