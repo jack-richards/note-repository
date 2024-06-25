@@ -64,6 +64,20 @@ public class MongoDbService
             .FirstOrDefaultAsync();
     }
 
+    public async Task deleteNote(NoteTitleDto note)
+    {
+        await _NotesCollection.DeleteOneAsync<NoteModel>(n => n.Id == note.Id);
+    }
+
+    public async Task saveNote(NoteModel note, List<ContentModel> contentModels)
+    {
+        // Iterate over ContentModel list and create array of contents, string[].
+        var contents = contentModels.Select(c => c.Content).ToArray();
+        // Update the note with any changes to content.
+        var updateDefinition = Builders<NoteModel>.Update.Set(n => n.Content, contents);
+        await _NotesCollection.UpdateOneAsync(n => n.Id == note.Id, updateDefinition);
+    }
+
     private bool CollectionExists(string collectionName, IMongoDatabase database)
     {
         var filter = new BsonDocument("name", collectionName);
