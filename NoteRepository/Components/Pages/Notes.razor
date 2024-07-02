@@ -1,39 +1,56 @@
 ﻿@page "/"
-@inject MongoDatabase.MongoDbService MongoDbService
 @using MongoDB.Bson
+@inject Components.Buttons.ButtonService ButtonService
+@inject Components.NoteService NoteService
+@implements IDisposable
 
-@rendermode InteractiveServer
+@layout Components.Layout.MainLayout
 
 <h3>Notes</h3>
 
 @if (notes == null) {
     <p>Loading...</p>
-} else if (notes.Count == 0) {
+} else if (notes.Notes.Count == 0) {
     <p>No notes found.</p>
 } else {
-    @foreach (var note in notes) {
+    @foreach (var note in notes.Notes) {
         <div class="card">
             <div class="card-body">
                 <a href="/notes/@note.Name">@note.Name</a>
-                <a @onclick="() => deleteNote(note)" class="btn btn-primary">Delete</a>
+                <a @onclick="() => DeleteNoteAsync(note)" class="btn btn-primary">Delete</a>
             </div>
         </div>
     }
 }
 
 @code {
-    private List<Components.Models.NoteTitleDto> ?notes;
+    protected override void OnInitialized()
+        => this.NoteService.NoteCreated += this.NoteCreated;
+
+    private void NoteCreated(object? sender, EventArgs e)
+        => this.InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+        => this.NoteService.NoteCreated -= this.NoteCreated;
+
+    private Components.Models.NotesModel ?notes;
 
     protected override async Task OnInitializedAsync()
     {
-        notes = await MongoDbService.GetNoteTitlesAsync();
+        notes = await NoteService.GetNoteTitlesAsync();
+
+        // Trigger layout to render a create note button within its navbar.
+        ButtonService.ChangeButton(typeof(Components.Buttons.CreateNoteButton), new Dictionary<string, object>
+        {
+            { "Notes", notes }
+        });
     }
 
-    private async Task deleteNote(Components.Models.NoteTitleDto note)
+    private async Task DeleteNoteAsync(Models.NoteTitleDto note)
     {
-        // Delete note from local list.
-        notes.Remove(note);
         // Delete note in database.
-        await MongoDbService.deleteNote(note);
+        await NoteService.DeleteNoteAsync(note);
+        // Delete note from NotesModel.
+        notes.DeleteNote(note);
     }
 }

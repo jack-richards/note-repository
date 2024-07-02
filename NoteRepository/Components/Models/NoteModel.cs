@@ -7,9 +7,25 @@ namespace NoteRepository.Components.Models
     public class NoteModel
     {
         [BsonId]
-        public ObjectId Id { get; set; }
-        public required string Name { get; set; }
-        public required string[] Content { get; set; }
-        public required string[] listLinks { get; set; }
+        public ObjectId Id { get; private set; }
+        // Each note should at the very least be given a name.
+        public string Name { get; private set; }
+        public ContentsModel ContentsModel { get; private set; }
+        public string[] ListLinks { get; private set; } = [];
+
+        public NoteModel(string name)
+        {
+            Id = ObjectId.GenerateNewId();
+            Name = name;
+            ContentsModel = new ContentsModel();
+        }
+
+        public NoteModel(ObjectId id, string name, string[] content, string[] listLinks)
+        {
+            Id = id;
+            Name = name;
+            ContentsModel = new ContentsModel(content);
+            ListLinks = listLinks;
+        }
     }
 }

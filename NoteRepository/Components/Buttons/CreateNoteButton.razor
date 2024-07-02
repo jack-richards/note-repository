@@ -1,0 +1,49 @@
+﻿@inject NoteService NoteService
+
+<Modal @ref="modal" Title="Create Note"
+    OnHidden="OnModalHidden">
+    <BodyTemplate>
+        <InputText @bind-Value="noteTitle"/>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="OnHideModalClick">Close</Button>
+        <Button Color="ButtonColor.Primary" @onclick="CreateNote">Create</Button>
+    </FooterTemplate>
+</Modal>
+
+<Button Color="ButtonColor.Primary" @onclick="OnShowModalClick">
+    <Icon Name="IconName.FileEarmarkPlusFill" /> Create Note </Button>
+
+@code {
+    [Parameter]
+    public Components.Models.NotesModel Notes { get; set; }
+
+    private string noteTitle = "Title of new note.";
+
+    private Modal modal = default!;
+
+    private async Task OnShowModalClick()
+    {
+        await modal.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await modal.HideAsync();
+    }
+
+    private void OnModalHidden()
+    {
+        // Reset text in modal input form to placeholder.
+        noteTitle = "Title of new note.";
+    }
+
+    private async void CreateNote()
+    {
+        Notes.CreateNote(noteTitle);
+
+        await NoteService.CreateNoteAsync(noteTitle);
+
+        await modal.HideAsync();
+    }
+}

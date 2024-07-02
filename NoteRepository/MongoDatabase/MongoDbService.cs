@@ -10,7 +10,7 @@ using MongoDB.Bson;
 
 public class MongoDbService
 {
-    private readonly IMongoCollection<NoteModel> _NotesCollection;
+    private readonly IMongoCollection<NoteDto> _NotesCollection;
     private readonly ILogger<MongoDbService> _logger;
 
     public MongoDbService(IOptions<MongoDBSettings> settings, ILogger<MongoDbService> logger)
@@ -38,13 +38,13 @@ public class MongoDbService
             database.CreateCollection("lists");
         }
 
-        _NotesCollection = database.GetCollection<NoteModel>("lists");
+        _NotesCollection = database.GetCollection<NoteDto>("lists");
     }
     public async Task<List<NoteTitleDto>> GetNoteTitlesAsync()
     {
         // Use a projection to return only the Id and Name of each note.
         // This is to reduce memory usage of the Notes page.
-        var projection = Builders<NoteModel>.Projection.Expression(note => new NoteTitleDto
+        var projection = Builders<NoteDto>.Projection.Expression(note => new NoteTitleDto
         {
             Id = note.Id,
             Name = note.Name
@@ -57,28 +57,31 @@ public class MongoDbService
         return notes;
     }
 
-    public async Task<NoteModel> GetNoteByNameAsync(string name)
+    public async Task<NoteDto> GetNoteByNameAsync(string name)
     {
         // Find the first 'Note' that matches name.
         return await _NotesCollection.Find(n => n.Name == name)
             .FirstOrDefaultAsync();
     }
 
-    public async Task deleteNote(NoteTitleDto note)
+    public async Task DeleteNoteAsync(NoteTitleDto note)
     {
-        await _NotesCollection.DeleteOneAsync<NoteModel>(n => n.Id == note.Id);
+        await _NotesCollection.DeleteOneAsync<NoteDto>(n => n.Id == note.Id);
     }
 
-    public async Task saveNote(NoteModel note, List<ContentModel> contentModels)
+    public async Task SaveNoteAsync(NoteDto note)
     {
-        // Iterate over ContentModel list and create array of contents, string[].
-        var contents = contentModels.Select(c => c.Content).ToArray();
         // Update the note with any changes to content.
-        var updateDefinition = Builders<NoteModel>.Update.Set(n => n.Content, contents);
+        var updateDefinition = Builders<NoteDto>.Update.Set(n => n.Content, note.Content);
         await _NotesCollection.UpdateOneAsync(n => n.Id == note.Id, updateDefinition);
     }
 
-    private bool CollectionExists(string collectionName, IMongoDatabase database)
+    public async Task CreateNoteAsync(NoteDto note)
+    {
+        await _NotesCollection.InsertOneAsync(note);
+    }
+
+    private static bool CollectionExists(string collectionName, IMongoDatabase database)
     {
         var filter = new BsonDocument("name", collectionName);
         // Creates a cursor that filters the results by the specified name.

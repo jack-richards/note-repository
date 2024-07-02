@@ -1,4 +1,5 @@
 using NoteRepository.Components;
+using NoteRepository.Components.Buttons;
 using NoteRepository.MongoDatabase;
 
 var config =
@@ -23,6 +24,8 @@ builder.Logging.SetMinimumLevel(LogLevel.Information);
 
 builder.Services.Configure<MongoDBSettings>(config.GetSection("MongoDB"));
 builder.Services.AddSingleton<MongoDbService>();
+builder.Services.AddScoped<ButtonService>();
+builder.Services.AddScoped<NoteService>();
 
 var app = builder.Build();
 

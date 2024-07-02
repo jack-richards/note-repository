@@ -1,30 +1,29 @@
 ﻿@page "/notes/{name}"
 @using MongoDB.Bson
-@inject MongoDatabase.MongoDbService MongoDbService
-
-@rendermode InteractiveServer
+@inject Components.Buttons.ButtonService ButtonService
+@inject NoteService NoteService
 
 <div class="container-md">
 <h2><u>@name</u></h2>
-@if (contents != null && contents.Count() > 0) {
-    @foreach (var content in contents) {
+@if (Content != null && Content.Count() > 0) {
+    @foreach (var content in Content) {
             // Check if current text element is in edit mode or not.
-            if (isEditMode(content))
+            if (content.EditMode)
             {
                 <div class="card">
                     <div class="card-body">
                         <!-- Bind data to interface, two way binding. -->
                         <input type="text" class="form-control" @bind="@content.Content"/>
-                        <a @onclick="() => saveChanges(content)"class="btn btn-primary">Save</a>
-                        <a @onclick="() => cancelChanges(content)" class="btn btn-primary">Cancel</a>
+                        <a @onclick="() => SaveChangesAsync(note, content)" class="btn btn-primary">Save</a>
+                        <a @onclick="content.CancelChanges" class="btn btn-primary">Cancel</a>
                     </div>
                 </div>
             } else {
                 <div class="card">
                     <div class="card-body">
                     <p class="card-text">@content.Content</p>
-                    <a @onclick="() => toggleEditMode(content)" class="btn btn-primary">Edit</a>
-                    <a @onclick="() => deleteContent(content)" class="btn btn-primary">Delete</a>
+                    <a @onclick="content.ToggleEditMode" class="btn btn-primary">Edit</a>
+                    <a @onclick="() => DeleteContent(note, content)" class="btn btn-primary">Delete</a>
                     </div>
                 </div>
             }
@@ -49,63 +48,37 @@
 
     private Components.Models.NoteModel ?note { get; set; }
 
-    private string[] links = [];
+    private List<Models.ContentModel> ?Content { get; set; }
 
-    // List containing Content objects.
-    private List<Components.Models.ContentModel> contents = [];
+    private string[] links = [];
 
     // This lifecycle hook ensures that whenever the parameter (note name in the url) changes
     // the component executes the data fetching logic again.
     protected override async Task OnParametersSetAsync()
     {
-        note = await MongoDbService.GetNoteByNameAsync(name);
-        if (note != null && note.Content != null)
+        note = await NoteService.GetNoteByNameAsync(name);
+        if (note != null && note.ContentsModel.Contents != null)
         {
             name = note.Name;
-            // Go through each Content element and convert it into a ContentModel.
-            contents = note.Content.Select((content, index) => 
-            new Components.Models.ContentModel(
-                content
-            )).ToList();
+            Content = note.ContentsModel.Contents;
+            links = note.ListLinks;
 
-            links = note.listLinks;
+            // Trigger layout to render a create content button within its navbar.
+            ButtonService.ChangeButton(typeof(Components.Buttons.CreateContentButton), new Dictionary<string, object>
+            {
+                { "Note", note }
+            });
         }
     }
 
-    private void toggleEditMode(Components.Models.ContentModel content)
+    private async Task SaveChangesAsync(Models.NoteModel note, Models.ContentModel content)
     {
-        // Set value to opposite of what it currently is, e.g. true => false.
-        content.EditMode = !content.EditMode;
+        await NoteService.SaveNoteAsync(note);
+        content.SaveChanges();
     }
 
-    private bool isEditMode(Components.Models.ContentModel content)
+    private void DeleteContent(Models.NoteModel note, Models.ContentModel content)
     {
-        return content.EditMode;
-    }
-
-    private async Task saveChanges(Components.Models.ContentModel content)
-    {
-        // Query mongodb, save changes server-side.
-        // Change original content field to reflect changes, new baseline.
-        content.originalContent = content.Content;
-        await MongoDbService.saveNote(note, contents);
-        // Exit edit mode.
-        toggleEditMode(content);
-    }
-
-    private void cancelChanges(Components.Models.ContentModel content)
-    {
-        // Revert Content/changes to original value.
-        content.Content = content.originalContent;
-        // Exit edit mode. Maybe after deleting changes? Depends on how I implement the editing logic.
-        toggleEditMode(content);
-    }
-
-    private async Task deleteContent(Components.Models.ContentModel content)
-    {
-        // Delete content object from local dictionary.
-        contents.Remove(content);
-        // Persist changes in database.
-        await MongoDbService.saveNote(note, contents);
+        note.ContentsModel.DeleteContent(content);
     }
 }

@@ -7,8 +7,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Remove="Components\CreateNoteButton.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Blazor.Bootstrap" Version="3.0.0-preview.1" />
     <PackageReference Include="MongoDB.Driver" Version="2.26.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Components\CreateNoteButton.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Components\CreateNoteButton.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Components\Buttons\CreateNoteButton.razor" />
   </ItemGroup>
 
 </Project>
