@@ -7,21 +7,20 @@ namespace NoteRepository.Components
     {
         private readonly MongoDbService _mongoDbService;
 
-        // Debating on whether to have many events relating to notes or just one. All will cause the UI to update.
+        // Various events used by other components to signal when to re-render.
         public event EventHandler? NoteCreated;
         public event EventHandler? NoteDeleted;
-        public event EventHandler? ContentAdded;
-        public event EventHandler? ContentDeleted;
         public event EventHandler? NoteSaved;
+        public event EventHandler? ChangesCancelled;
 
         public NoteService(MongoDbService mongoDbService)
         {
             _mongoDbService = mongoDbService;
         }
 
-        public void EmitNoteCreated()
+        public void OnChangesCancelled()
         {
-            NoteCreated?.Invoke(this, EventArgs.Empty);
+            ChangesCancelled?.Invoke(this, EventArgs.Empty);
         }
 
         public async Task SaveNoteAsync(NoteModel note)

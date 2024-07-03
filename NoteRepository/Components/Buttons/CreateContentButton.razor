@@ -1,10 +1,14 @@
-﻿<button @onclick="() => CreateContent()">CreateContent</button>
+﻿@inject NoteService NoteService
+
+<Button Color="ButtonColor.Primary" Class="form-control" @onclick="() => CreateContent()">Create Content</Button>
 
 @code {
     [Parameter]
     public Components.Models.NoteModel Note { get; set; }
 
-    private void CreateContent()
+    private async Task CreateContent()
     {
+        Note.ContentsModel.CreateContent();
+        await NoteService.SaveNoteAsync(Note);
     }
 }

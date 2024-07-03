@@ -1,0 +1,41 @@
+﻿@inject NoteService NoteService
+
+<Modal @ref="modal" class="modal" Title="Delete Selected Content">
+    <BodyTemplate>
+        <CardText>Delete Content?</CardText>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Primary" @onclick="DeleteContent">Confirm</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnHideModalClick">Cancel</Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Models.NoteModel? Note;
+    private Models.ContentModel? Content;
+
+    private Modal modal = default!;
+
+    public async Task OnShowModalClick(Models.NoteModel note, Models.ContentModel content)
+    {
+        Note = note;
+        Content = content;
+        await modal.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await modal.HideAsync();
+    }
+
+    private async void DeleteContent()
+    {
+        if (Note != null && Content != null)
+        {
+            Note.ContentsModel.DeleteContent(Content);
+            await NoteService.SaveNoteAsync(Note);
+        }
+
+        await modal.HideAsync();
+    }
+}

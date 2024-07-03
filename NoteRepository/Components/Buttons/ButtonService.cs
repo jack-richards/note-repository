@@ -7,11 +7,18 @@
 
         public event EventHandler? ButtonChanged;
 
+        public event EventHandler? CreateNotePressed;
+
         public void ChangeButton(Type ButtonType, Dictionary<string, object> ButtonComponentParameters)
         {
             ButtonComponentType = ButtonType;
             this.ButtonComponentParameters = ButtonComponentParameters;
             ButtonChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void OnCreateNotePressed()
+        {
+            CreateNotePressed?.Invoke(this, EventArgs.Empty);
         }
     }
 }

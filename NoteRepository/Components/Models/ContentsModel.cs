@@ -25,15 +25,12 @@ namespace NoteRepository.Components.Models
         {
             // Delete content object from local dictionary.
             Contents.Remove(content);
-            // Persist changes in database.
-            //await _mongoDbService.saveNote(_note, this);
         }
 
         public void CreateContent()
         {
             var content = new ContentModel("");
             Contents.Add(content);
-            //await _mongoDbService.saveNote(_note, this);
         }
     }
 }

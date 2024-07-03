@@ -1,0 +1,40 @@
+﻿@inject NoteService NoteService
+
+<Modal @ref="modal" class="modal" Title="Cancel Changes">
+    <BodyTemplate>
+        <CardText>You have unsaved changes, are you sure that you want to exit?</CardText>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Primary" @onclick="CancelChanges">Yes</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnHideModalClick">No</Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Models.ContentModel? Content;
+
+    private Modal modal = default!;
+
+    public async Task OnShowModalClick(Models.ContentModel content)
+    {
+        Content = content;
+        await modal.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await modal.HideAsync();
+    }
+
+    private async void CancelChanges()
+    {
+        if (Content != null)
+        {
+            Content.CancelChanges();
+            // Need to notify parent component (note) that the UI should be re-rendered.
+            NoteService.OnChangesCancelled();
+        }
+
+        await modal.HideAsync();
+    }
+}

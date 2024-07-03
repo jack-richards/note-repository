@@ -3,18 +3,19 @@
 @implements IDisposable
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
     <main>
-        @if (ButtonService.ButtonComponentType != null) {
-            <div class="top-row px-4">
-                <DynamicComponent Type="@ButtonService.ButtonComponentType" Parameters="@ButtonService.ButtonComponentParameters" />
-            </div>
-        }
+        <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+          <div class="container-fluid ms-5">
+            <a class="navbar-brand" href="#">Note Repository</a>
+            @if (ButtonService.ButtonComponentType != null) {
+                <form class="d-flex me-5">
+                        <DynamicComponent Type="@ButtonService.ButtonComponentType" Parameters="@ButtonService.ButtonComponentParameters" />
+                </form>
+            }
+          </div>
+        </nav>
 
-        <article class="content px-4">
+        <article class="content px-4 mt-2" style="padding-top: 60px">
             @Body
         </article>
     </main>

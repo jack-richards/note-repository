@@ -1,0 +1,43 @@
+﻿@inject NoteService NoteService
+
+<Modal @ref="modal" class="modal" Title="Delete Note">
+    <BodyTemplate>
+        <CardText>Are you sure that you want to delete "@Note?.Name"?</CardText>
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Primary" @onclick="DeleteNote">Confirm</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="OnHideModalClick">Cancel</Button>
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Components.Models.NotesModel ?Notes;
+    private Components.Models.NoteTitleDto ?Note;
+
+    private Modal modal = default!;
+
+    public async Task OnShowModalClick(Models.NotesModel notes, Models.NoteTitleDto note)
+    {
+        Notes = notes;
+        Note = note;
+        await modal.ShowAsync();
+    }
+
+    private async Task OnHideModalClick()
+    {
+        await modal.HideAsync();
+    }
+
+    private async void DeleteNote()
+    {
+        if (Note != null && Notes != null)
+        {
+            // Delete note from NotesModel.
+            Notes.DeleteNote(Note);
+            // Delete note in database.
+            await NoteService.DeleteNoteAsync(Note);
+        }
+
+        await modal.HideAsync();
+    }
+}

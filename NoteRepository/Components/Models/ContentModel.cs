@@ -1,12 +1,10 @@
-﻿using NoteRepository.MongoDatabase;
-
-namespace NoteRepository.Components.Models
+﻿namespace NoteRepository.Components.Models
 {
     public class ContentModel
     {
         public string Id { get; }
         public string Content { get; set; }
-        public string originalContent { get; set; }
+        private string OriginalContent;
         public bool EditMode { get; private set; }
 
         public ContentModel(string content)
@@ -14,7 +12,7 @@ namespace NoteRepository.Components.Models
             // Generate a unique ID.
             Id = Guid.NewGuid().ToString();
             Content = content;
-            originalContent = content;
+            OriginalContent = content;
             // All Content objects begin not in edit mode.
             EditMode = false;
         }
@@ -28,7 +26,7 @@ namespace NoteRepository.Components.Models
         public void CancelChanges()
         {
             // Revert Content/changes to original value.
-            Content = originalContent;
+            Content = OriginalContent;
             // Exit edit mode. Maybe after deleting changes? Depends on how I implement the editing logic.
             ToggleEditMode();
         }
@@ -36,9 +34,21 @@ namespace NoteRepository.Components.Models
         public void SaveChanges()
         {
             // Change original content field to reflect changes, new baseline.
-            originalContent = Content;
+            OriginalContent = Content;
             // Exit edit mode.
             ToggleEditMode();
+        }
+
+        public bool ChangesMade()
+        {
+            if(Content != OriginalContent)
+            {
+                return true;
+            } 
+            else
+            {
+                return false;
+            }
         }
     }
 }

@@ -6,51 +6,68 @@
 
 @layout Components.Layout.MainLayout
 
-<h3>Notes</h3>
+<NoteRepository.Components.Modals.CreateNoteModal @ref="createNoteModal" Notes="@notes"></NoteRepository.Components.Modals.CreateNoteModal>
+<NoteRepository.Components.Modals.DeleteNoteModal @ref="deleteNoteModal"></NoteRepository.Components.Modals.DeleteNoteModal>
 
-@if (notes == null) {
-    <p>Loading...</p>
-} else if (notes.Notes.Count == 0) {
-    <p>No notes found.</p>
-} else {
-    @foreach (var note in notes.Notes) {
-        <div class="card">
-            <div class="card-body">
-                <a href="/notes/@note.Name">@note.Name</a>
-                <a @onclick="() => DeleteNoteAsync(note)" class="btn btn-primary">Delete</a>
+<div class="container-sm">
+    <h3>Notes</h3>
+    @if (notes == null) {
+        <p>Loading...</p>
+    } else if (notes.Notes.Count == 0) {
+        <p>No notes found.</p>
+    } else {
+        @foreach (var note in notes.Notes) {
+            <div class="card shadow mb-2">
+                <div class="card-body d-flex justify-content-between align-items-center text-center">
+                    <a href="/notes/@note.Name">@note.Name</a>
+                    <Button Color="ButtonColor.Primary" @onclick="() => DeleteNotePressed(notes, note)">Delete</Button>
+                </div>
             </div>
-        </div>
+        }
     }
-}
+</div>
 
 @code {
-    protected override void OnInitialized()
-        => this.NoteService.NoteCreated += this.NoteCreated;
+    // Listen for relevant events from services.
+    protected override void OnInitialized() {
+        this.NoteService.NoteCreated += this.NotesChanged;
+        this.NoteService.NoteDeleted += this.NotesChanged;
+        this.ButtonService.CreateNotePressed += this.CreateNotePressed;
+    }
 
-    private void NoteCreated(object? sender, EventArgs e)
+    // Render create note modal component.
+    private async void CreateNotePressed(object? sender, EventArgs e) {
+        await this.createNoteModal.OnShowModalClick();
+    }
+
+    // Show deletion confirmation modal.
+    private async void DeleteNotePressed(Models.NotesModel notes, Models.NoteTitleDto note)
+    {
+        await this.deleteNoteModal.OnShowModalClick(notes, note);
+    }
+
+    // When an event indicating a change to the state of the notes occurs, we re-render the UI.
+    private void NotesChanged(object? sender, EventArgs e)
         => this.InvokeAsync(StateHasChanged);
-
-    public void Dispose()
-        => this.NoteService.NoteCreated -= this.NoteCreated;
+    
+    // When called automatically cleans up the event listeners.
+    public void Dispose() {
+        this.NoteService.NoteCreated -= this.NotesChanged;
+        this.NoteService.NoteDeleted -= this.NotesChanged;
+        this.ButtonService.CreateNotePressed -= this.CreateNotePressed;
+    }
 
     private Components.Models.NotesModel ?notes;
+
+    // Modals.
+    private Components.Modals.CreateNoteModal createNoteModal = default!;
+    private Components.Modals.DeleteNoteModal deleteNoteModal = default!;
 
     protected override async Task OnInitializedAsync()
     {
         notes = await NoteService.GetNoteTitlesAsync();
 
         // Trigger layout to render a create note button within its navbar.
-        ButtonService.ChangeButton(typeof(Components.Buttons.CreateNoteButton), new Dictionary<string, object>
-        {
-            { "Notes", notes }
-        });
-    }
-
-    private async Task DeleteNoteAsync(Models.NoteTitleDto note)
-    {
-        // Delete note in database.
-        await NoteService.DeleteNoteAsync(note);
-        // Delete note from NotesModel.
-        notes.DeleteNote(note);
+        ButtonService.ChangeButton(typeof(Components.Buttons.CreateNoteButton), new Dictionary<string, object>{});
     }
 }

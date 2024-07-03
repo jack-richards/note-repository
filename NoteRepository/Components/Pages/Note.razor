@@ -1,29 +1,38 @@
 ﻿@page "/notes/{name}"
 @using MongoDB.Bson
-@inject Components.Buttons.ButtonService ButtonService
+@inject Buttons.ButtonService ButtonService
 @inject NoteService NoteService
+@inject IJSRuntime jsRuntime
+@implements IDisposable
+
+<NoteRepository.Components.Modals.DeleteContentModal @ref="deleteContentModal"></NoteRepository.Components.Modals.DeleteContentModal>
+<NoteRepository.Components.Modals.CancelChangesModal @ref="cancelChangesModal"></NoteRepository.Components.Modals.CancelChangesModal>
 
 <div class="container-md">
-<h2><u>@name</u></h2>
+ <h2>@name</h2>
 @if (Content != null && Content.Count() > 0) {
     @foreach (var content in Content) {
             // Check if current text element is in edit mode or not.
             if (content.EditMode)
             {
-                <div class="card">
-                    <div class="card-body">
-                        <!-- Bind data to interface, two way binding. -->
-                        <input type="text" class="form-control" @bind="@content.Content"/>
-                        <a @onclick="() => SaveChangesAsync(note, content)" class="btn btn-primary">Save</a>
-                        <a @onclick="content.CancelChanges" class="btn btn-primary">Cancel</a>
+                <div class="card shadow mb-2">
+                    <!-- Bind data to interface, two way binding. -->
+                    <div class="mb-2">
+                        <InputTextArea type="text" class="form-control" id="@content.Id" @bind-Value="@content.Content"/>
+                    </div>
+                    <div class="btn-toolbar m-3">
+                        <Button Color="ButtonColor.Primary" @onclick="() => SaveChangesAsync(note, content)" class="me-1">Save</Button>
+                        <Button Color="ButtonColor.Primary" @onclick="() => CancelChangesPressed(content)">Cancel</Button>
                     </div>
                 </div>
             } else {
-                <div class="card">
-                    <div class="card-body">
-                    <p class="card-text">@content.Content</p>
-                    <a @onclick="content.ToggleEditMode" class="btn btn-primary">Edit</a>
-                    <a @onclick="() => DeleteContent(note, content)" class="btn btn-primary">Delete</a>
+                <div class="card shadow mb-2">
+                    <div class="card-body border-bottom border-secondary">
+                        <p class="card-text pre-wrap">@content.Content</p>
+                    </div>
+                    <div class="btn-toolbar m-3">
+                        <Button Color="ButtonColor.Primary" @onclick="content.ToggleEditMode" class="me-1">Edit</Button>
+                        <Button Color="ButtonColor.Primary" @onclick="() => DeleteContentPressed(note, content)">Delete</Button>
                     </div>
                 </div>
             }
@@ -44,13 +53,32 @@
 
 @code {
     [Parameter]
-    public string name { get; set; }
+    public string name { get; set; } = "";
 
     private Components.Models.NoteModel ?note { get; set; }
 
     private List<Models.ContentModel> ?Content { get; set; }
 
     private string[] links = [];
+
+    protected override void OnInitialized() {
+        this.NoteService.NoteSaved += this.NoteSaved;
+        this.NoteService.ChangesCancelled += this.ChangesCancelled;
+    }
+
+    private void NoteSaved(object? sender, EventArgs e)
+    => this.InvokeAsync(StateHasChanged);
+
+    private void ChangesCancelled(object? sender, EventArgs e)
+    => this.InvokeAsync(StateHasChanged);
+
+    public void Dispose() {
+        this.NoteService.NoteSaved -= this.NoteSaved;
+        this.NoteService.ChangesCancelled -= this.ChangesCancelled;
+    }
+
+    private Modals.DeleteContentModal deleteContentModal = default!;
+    private Modals.CancelChangesModal cancelChangesModal = default!;
 
     // This lifecycle hook ensures that whenever the parameter (note name in the url) changes
     // the component executes the data fetching logic again.
@@ -71,14 +99,54 @@
         }
     }
 
-    private async Task SaveChangesAsync(Models.NoteModel note, Models.ContentModel content)
+    // After each time the page is fully rendered, attempt to resize the textareas so that all the contents are immediately visible.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await NoteService.SaveNoteAsync(note);
-        content.SaveChanges();
+        if (Content != null)
+        {
+            foreach (var content in Content)
+            {
+                if (content.EditMode == true)
+                {
+                    await ResizeTextArea(content.Id);
+                }
+            }
+        }
     }
 
-    private void DeleteContent(Models.NoteModel note, Models.ContentModel content)
+    private async Task ResizeTextArea(string id)
     {
-        note.ContentsModel.DeleteContent(content);
+        try
+        {
+            await jsRuntime.InvokeVoidAsync("ResizeBasedOnScrollHeight", id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error invoking ResizeBasedOnScrollHeight: {ex.Message}");
+            // Handle exception as needed
+        }
+    }
+
+    private async Task SaveChangesAsync(Models.NoteModel note, Models.ContentModel content)
+    {
+        content.SaveChanges();
+        await NoteService.SaveNoteAsync(note);
+    }
+
+    private async Task DeleteContentPressed(Models.NoteModel note, Models.ContentModel content)
+    {
+        await deleteContentModal.OnShowModalClick(note, content);
+    }
+
+    private async Task CancelChangesPressed(Models.ContentModel content)
+    {
+        if (content.ChangesMade())
+        {
+            await cancelChangesModal.OnShowModalClick(content);
+        } 
+        else
+        {
+            content.CancelChanges();
+        }
     }
 }
