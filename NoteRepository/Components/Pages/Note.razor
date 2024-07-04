@@ -40,15 +40,6 @@
 } else {
     <p>No Notes</p>
 }
-
-<h2>Links</h2>
-@if (links != null && links.Length > 0) {
-    @foreach (var link in links) {
-        <a href="@link">@link</a>
-    }
-} else {
-    <p>No Links</p>
-}
 </div>
 
 @code {
@@ -58,8 +49,6 @@
     private Components.Models.NoteModel ?note { get; set; }
 
     private List<Models.ContentModel> ?Content { get; set; }
-
-    private string[] links = [];
 
     protected override void OnInitialized() {
         this.NoteService.NoteSaved += this.NoteSaved;
@@ -89,7 +78,6 @@
         {
             name = note.Name;
             Content = note.ContentsModel.Contents;
-            links = note.ListLinks;
 
             // Trigger layout to render a create content button within its navbar.
             ButtonService.ChangeButton(typeof(Components.Buttons.CreateContentButton), new Dictionary<string, object>
